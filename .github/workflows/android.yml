@@ -38,45 +38,34 @@ jobs:
           libffi-dev \
           libssl-dev \
           libgl1-mesa-dev \
-          libc6-dev
+          libc6-dev \
+          android-sdk
 
     # --------------------------------------------------
-    # 4. Install Python dependencies
+    # 4. Set Android environment
+    # --------------------------------------------------
+    - name: Set Android environment
+      run: |
+        echo "ANDROID_HOME=/usr/lib/android-sdk" >> $GITHUB_ENV
+        echo "PATH=/usr/lib/android-sdk/tools/bin:/usr/lib/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
+
+    # --------------------------------------------------
+    # 5. Accept Android SDK licenses
+    # --------------------------------------------------
+    - name: Accept Android SDK licenses
+      run: |
+        yes | sdkmanager --licenses
+
+    # --------------------------------------------------
+    # 6. Install Python dependencies
     # --------------------------------------------------
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip setuptools wheel
-        pip install cython
-        pip install buildozer
+        pip install cython buildozer
 
     # --------------------------------------------------
-    # 5. Bootstrap Android SDK (expected to fail)
-    # --------------------------------------------------
-    - name: Bootstrap Android SDK
-      run: |
-        buildozer android debug || true
-
-    # --------------------------------------------------
-    # 6. Accept Android SDK licenses (robust)
-    # --------------------------------------------------
-    - name: Accept Android SDK licenses
-      run: |
-        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
-
-        if [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
-          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
-        elif [ -f "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" ]; then
-          yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses
-        elif [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        else
-          echo "sdkmanager not found"
-          find $ANDROID_HOME
-          exit 1
-        fi
-
-    # --------------------------------------------------
-    # 7. Build APK (real build)
+    # 7. Build APK
     # --------------------------------------------------
     - name: Build APK
       run: |
