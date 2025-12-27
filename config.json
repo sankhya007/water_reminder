@@ -1,0 +1,6 @@
+{
+    "interval": 30,
+    "sleep_start": "23:00",
+    "sleep_end": "07:00",
+    "ringtone": "DEFAULT"
+}
