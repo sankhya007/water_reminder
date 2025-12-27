@@ -57,12 +57,23 @@ jobs:
         buildozer android debug || true
 
     # --------------------------------------------------
-    # 6. Accept Android SDK licenses
+    # 6. Accept Android SDK licenses (robust)
     # --------------------------------------------------
     - name: Accept Android SDK licenses
       run: |
         export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+        if [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
+        elif [ -f "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" ]; then
+          yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses
+        elif [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        else
+          echo "sdkmanager not found"
+          find $ANDROID_HOME
+          exit 1
+        fi
 
     # --------------------------------------------------
     # 7. Build APK (real build)
