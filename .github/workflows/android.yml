@@ -9,6 +9,12 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    # --------------------------------------------------
+    # CRITICAL: Gradle / native build stability
+    # --------------------------------------------------
+    env:
+      GRADLE_OPTS: "-Xmx4g -Dorg.gradle.daemon=false"
+
     steps:
     # --------------------------------------------------
     # Checkout
@@ -31,7 +37,7 @@ jobs:
         java-version: "17"
 
     # --------------------------------------------------
-    # Cache Buildozer / p4a / pip (NETWORK FIX)
+    # Cache Buildozer / p4a / pip
     # --------------------------------------------------
     - name: Cache buildozer and pip
       uses: actions/cache@v4
@@ -64,22 +70,20 @@ jobs:
         mkdir -p /home/runner/android-sdk
         cd /home/runner/android-sdk
 
-        if [ ! -d "cmdline-tools/latest" ]; then
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-*.zip
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip commandlinetools-linux-*.zip
 
-          mv cmdline-tools cmdline-tools-temp
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools-temp/* cmdline-tools/latest/
-          rm -rf cmdline-tools-temp
-        fi
+        mv cmdline-tools cmdline-tools-temp
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools-temp/* cmdline-tools/latest/
+        rm -rf cmdline-tools-temp
 
         echo "ANDROID_HOME=/home/runner/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=/home/runner/android-sdk" >> $GITHUB_ENV
         echo "PATH=/home/runner/android-sdk/cmdline-tools/latest/bin:/home/runner/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
     # --------------------------------------------------
-    # Install SDK packages (licenses handled inline)
+    # Install SDK packages
     # --------------------------------------------------
     - name: Install Android SDK packages
       run: |
@@ -109,19 +113,27 @@ jobs:
         pip install cython buildozer
 
     # --------------------------------------------------
-    # Build APK (RETRY ON NETWORK FAILURE)
+    # Build APK (RETRY + FAIL LOUDLY)
     # --------------------------------------------------
-    - name: Build APK (retry on failure)
+    - name: Build APK
       run: |
+        set -e
         for i in 1 2 3; do
           echo "Build attempt $i..."
-          buildozer android debug && break
-          echo "Build failed (attempt $i). Retrying in 20s..."
-          sleep 20
+          if buildozer android debug; then
+            echo "✅ Build succeeded"
+            break
+          fi
+          if [ "$i" -eq 3 ]; then
+            echo "❌ Build failed after 3 attempts"
+            exit 1
+          fi
+          echo "Retrying in 30s..."
+          sleep 30
         done
 
     # --------------------------------------------------
-    # Collect APK into bin/ (GUARANTEED)
+    # Collect APK
     # --------------------------------------------------
     - name: Collect APK
       run: |
