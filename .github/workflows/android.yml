@@ -11,19 +11,19 @@ jobs:
 
     steps:
     # --------------------------------------------------
-    # 1. Checkout
+    # Checkout
     # --------------------------------------------------
     - uses: actions/checkout@v4
 
     # --------------------------------------------------
-    # 2. Python
+    # Python
     # --------------------------------------------------
     - uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
     # --------------------------------------------------
-    # 3. Java 17 (REQUIRED)
+    # Java 17 (MANDATORY for sdkmanager)
     # --------------------------------------------------
     - uses: actions/setup-java@v4
       with:
@@ -31,7 +31,7 @@ jobs:
         java-version: "17"
 
     # --------------------------------------------------
-    # 4. System deps
+    # System dependencies
     # --------------------------------------------------
     - name: Install system dependencies
       run: |
@@ -44,12 +44,12 @@ jobs:
           python3-pip
 
     # --------------------------------------------------
-    # 5. Install Android cmdline-tools
+    # Install Android SDK (single source of truth)
     # --------------------------------------------------
-    - name: Install Android SDK cmdline-tools
+    - name: Install Android SDK
       run: |
-        mkdir -p $HOME/android-sdk
-        cd $HOME/android-sdk
+        mkdir -p /home/runner/android-sdk
+        cd /home/runner/android-sdk
 
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip commandlinetools-linux-*.zip
@@ -59,23 +59,23 @@ jobs:
         mv cmdline-tools-temp/* cmdline-tools/latest/
         rm -rf cmdline-tools-temp
 
-        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
+        echo "ANDROID_HOME=/home/runner/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=/home/runner/android-sdk" >> $GITHUB_ENV
+        echo "PATH=/home/runner/android-sdk/cmdline-tools/latest/bin:/home/runner/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
     # --------------------------------------------------
-    # 6. Install SDK packages + accept licenses (CORRECT)
+    # Install SDK packages + accept licenses INLINE
     # --------------------------------------------------
     - name: Install Android SDK packages
       run: |
-        yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+        yes | sdkmanager --sdk_root=/home/runner/android-sdk \
           "platform-tools" \
           "platforms;android-34" \
           "build-tools;36.1.0" \
           "ndk;25.2.9519653"
 
     # --------------------------------------------------
-    # 7. Python deps
+    # Python deps
     # --------------------------------------------------
     - name: Install Python dependencies
       run: |
@@ -83,14 +83,14 @@ jobs:
         pip install cython buildozer
 
     # --------------------------------------------------
-    # 8. Build APK
+    # Build APK
     # --------------------------------------------------
     - name: Build APK
       run: |
         buildozer android debug
 
     # --------------------------------------------------
-    # 9. Upload APK
+    # Upload APK
     # --------------------------------------------------
     - uses: actions/upload-artifact@v4
       with:
