@@ -1,5 +1,7 @@
 [buildozer]
 log_level = 2
+python_version = 3.10
+cython_version = <3.0
 
 [app]
 title = WaterReminder
@@ -18,11 +20,6 @@ fullscreen = 1
 
 android.api = 34
 android.minapi = 21
-
-# ❌ android.build_tools_version REMOVED
-
-android.sdk_path = /home/runner/android-sdk
-android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653
 
 android.permissions = POST_NOTIFICATIONS,WAKE_LOCK
 android.allow_backup = True
