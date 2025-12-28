@@ -26,28 +26,27 @@ orientation = portrait
 fullscreen = 1
 
 # --------------------------------------------------
-# Android configuration (CRITICAL)
+# Android configuration
 # --------------------------------------------------
 
-# MUST match what you install in GitHub Actions
+# MUST match installed platform
 android.api = 34
 android.minapi = 21
-android.build_tools_version = 36.1.0
-
-# Force Buildozer to use the correct SDK/NDK
-android.sdk_path = /home/runner/android-sdk
-android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653
 
 # Permissions
 android.permissions = POST_NOTIFICATIONS,WAKE_LOCK
-
 android.allow_backup = True
 
 # App icon
 android.icon.filename = assets/icon.png
 
 # --------------------------------------------------
-# Optional but recommended
+# CRITICAL: modern python-for-android
+# --------------------------------------------------
+p4a.branch = develop
+
+# --------------------------------------------------
+# AndroidX (safe)
 # --------------------------------------------------
 android.enable_androidx = True
 android.gradle_dependencies = androidx.core:core:1.12.0
