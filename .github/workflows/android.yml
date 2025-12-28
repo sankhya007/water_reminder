@@ -9,12 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
-    # --------------------------------------------------
-    # CRITICAL: Gradle / native build stability
-    # --------------------------------------------------
-    env:
-      GRADLE_OPTS: "-Xmx4g -Dorg.gradle.daemon=false"
-
     steps:
     # --------------------------------------------------
     # Checkout
@@ -37,7 +31,7 @@ jobs:
         java-version: "17"
 
     # --------------------------------------------------
-    # Cache Buildozer / p4a / pip
+    # Cache Buildozer / p4a / pip (NETWORK FIX)
     # --------------------------------------------------
     - name: Cache buildozer and pip
       uses: actions/cache@v4
@@ -70,34 +64,29 @@ jobs:
         mkdir -p /home/runner/android-sdk
         cd /home/runner/android-sdk
 
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-*.zip
+        if [ ! -d "cmdline-tools/latest" ]; then
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip commandlinetools-linux-*.zip
 
-        mv cmdline-tools cmdline-tools-temp
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools-temp/* cmdline-tools/latest/
-        rm -rf cmdline-tools-temp
+          mv cmdline-tools cmdline-tools-temp
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools-temp/* cmdline-tools/latest/
+          rm -rf cmdline-tools-temp
+        fi
 
         echo "ANDROID_HOME=/home/runner/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=/home/runner/android-sdk" >> $GITHUB_ENV
         echo "PATH=/home/runner/android-sdk/cmdline-tools/latest/bin:/home/runner/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
     # --------------------------------------------------
-    # 🔴 EXPLICITLY ACCEPT ANDROID SDK LICENSES (REQUIRED)
-    # --------------------------------------------------
-    - name: Accept Android SDK licenses
-      run: |
-        yes | sdkmanager --sdk_root=/home/runner/android-sdk --licenses
-
-    # --------------------------------------------------
-    # Install SDK packages (NO `yes |` HERE)
+    # Install SDK packages (licenses handled inline)
     # --------------------------------------------------
     - name: Install Android SDK packages
       run: |
-        sdkmanager --sdk_root=/home/runner/android-sdk \
+        yes | sdkmanager --sdk_root=/home/runner/android-sdk \
           "platform-tools" \
           "platforms;android-34" \
-          "build-tools;34.0.0" \
+          "build-tools;36.1.0" \
           "ndk;25.2.9519653"
 
     # --------------------------------------------------
@@ -120,36 +109,29 @@ jobs:
         pip install cython buildozer
 
     # --------------------------------------------------
-    # Build APK (retry + fail loudly)
+    # Build APK (RETRY ON NETWORK FAILURE)
     # --------------------------------------------------
-    - name: Build APK
+    - name: Build APK (retry on failure)
       run: |
-        set -e
         for i in 1 2 3; do
           echo "Build attempt $i..."
-          if buildozer android debug; then
-            echo "✅ Build succeeded"
-            break
-          fi
-          if [ "$i" -eq 3 ]; then
-            echo "❌ Build failed after 3 attempts"
-            exit 1
-          fi
-          echo "Retrying in 30s..."
-          sleep 30
+          buildozer android debug && break
+          echo "Build failed (attempt $i). Retrying in 20s..."
+          sleep 20
         done
 
-    # --------------------------------------------------
-    # Collect APK
-    # --------------------------------------------------
     - name: Collect APK
       run: |
-        mkdir -p bin
+        echo "Searching for APK..."
         APK_PATH=$(find . -type f -name "*.apk" | head -n 1)
+
         if [ -z "$APK_PATH" ]; then
           echo "❌ No APK found"
           exit 1
         fi
+
+        echo "✅ Found APK at $APK_PATH"
+        mkdir -p bin
         cp "$APK_PATH" bin/
 
     # --------------------------------------------------
@@ -158,4 +140,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: WaterReminder-APK
-        path: bin/*.apk
+        path: |
+          bin/*.apk
