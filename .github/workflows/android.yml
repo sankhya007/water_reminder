@@ -11,53 +11,61 @@ jobs:
 
     steps:
     # --------------------------------------------------
-    # 1. Checkout repository
+    # 1. Checkout
     # --------------------------------------------------
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     # --------------------------------------------------
-    # 2. Set up Python
+    # 2. Python
     # --------------------------------------------------
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
     # --------------------------------------------------
-    # 3. Install system dependencies
+    # 3. System deps
     # --------------------------------------------------
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          python3-pip \
-          git zip unzip \
           openjdk-17-jdk \
+          wget unzip \
           build-essential \
-          libffi-dev \
-          libssl-dev \
+          libffi-dev libssl-dev \
           libgl1-mesa-dev \
-          libc6-dev \
-          android-sdk
+          python3-pip
 
     # --------------------------------------------------
-    # 4. Set Android environment
+    # 4. Install Android cmdline-tools (CORRECT WAY)
     # --------------------------------------------------
-    - name: Set Android environment
+    - name: Install Android SDK cmdline-tools
       run: |
-        echo "ANDROID_HOME=/usr/lib/android-sdk" >> $GITHUB_ENV
-        echo "PATH=/usr/lib/android-sdk/tools/bin:/usr/lib/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip commandlinetools-linux-*.zip
+        mv cmdline-tools cmdline-tools-temp
+        mkdir cmdline-tools/latest
+        mv cmdline-tools-temp/* cmdline-tools/latest/
+
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     # --------------------------------------------------
-    # 5. Accept Android SDK licenses
+    # 5. Accept licenses + install required SDK parts
     # --------------------------------------------------
-    - name: Accept Android SDK licenses
+    - name: Install Android SDK packages
       run: |
         yes | sdkmanager --licenses
+        sdkmanager \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;33.0.2" \
+          "ndk;25.2.9519653"
 
     # --------------------------------------------------
-    # 6. Install Python dependencies
+    # 6. Python deps
     # --------------------------------------------------
     - name: Install Python dependencies
       run: |
@@ -72,10 +80,9 @@ jobs:
         buildozer android debug
 
     # --------------------------------------------------
-    # 8. Upload APK artifact
+    # 8. Upload APK
     # --------------------------------------------------
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: WaterReminder-APK
         path: bin/*.apk
