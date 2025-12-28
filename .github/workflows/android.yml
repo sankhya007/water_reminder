@@ -10,29 +10,17 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    # --------------------------------------------------
-    # Checkout
-    # --------------------------------------------------
     - uses: actions/checkout@v4
 
-    # --------------------------------------------------
-    # Python
-    # --------------------------------------------------
     - uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
-    # --------------------------------------------------
-    # Java 17 (MANDATORY for sdkmanager)
-    # --------------------------------------------------
     - uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: "17"
 
-    # --------------------------------------------------
-    # System dependencies
-    # --------------------------------------------------
     - name: Install system dependencies
       run: |
         sudo apt update
@@ -43,9 +31,6 @@ jobs:
           libgl1-mesa-dev \
           python3-pip
 
-    # --------------------------------------------------
-    # Install Android SDK (single source of truth)
-    # --------------------------------------------------
     - name: Install Android SDK
       run: |
         mkdir -p /home/runner/android-sdk
@@ -63,9 +48,6 @@ jobs:
         echo "ANDROID_SDK_ROOT=/home/runner/android-sdk" >> $GITHUB_ENV
         echo "PATH=/home/runner/android-sdk/cmdline-tools/latest/bin:/home/runner/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
-    # --------------------------------------------------
-    # Install SDK packages + accept licenses INLINE
-    # --------------------------------------------------
     - name: Install Android SDK packages
       run: |
         yes | sdkmanager --sdk_root=/home/runner/android-sdk \
@@ -74,24 +56,26 @@ jobs:
           "build-tools;36.1.0" \
           "ndk;25.2.9519653"
 
-    # --------------------------------------------------
-    # Python deps
-    # --------------------------------------------------
+    - name: Fix sdkmanager path for python-for-android
+      run: |
+        mkdir -p /home/runner/android-sdk/tools/bin
+        ln -sf /home/runner/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+               /home/runner/android-sdk/tools/bin/sdkmanager
+
+    - name: Fix avdmanager path for python-for-android
+      run: |
+        ln -sf /home/runner/android-sdk/cmdline-tools/latest/bin/avdmanager \
+               /home/runner/android-sdk/tools/bin/avdmanager
+
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip setuptools wheel
         pip install cython buildozer
 
-    # --------------------------------------------------
-    # Build APK
-    # --------------------------------------------------
     - name: Build APK
       run: |
         buildozer android debug
 
-    # --------------------------------------------------
-    # Upload APK
-    # --------------------------------------------------
     - uses: actions/upload-artifact@v4
       with:
         name: WaterReminder-APK
