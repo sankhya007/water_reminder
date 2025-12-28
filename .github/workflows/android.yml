@@ -115,7 +115,7 @@ jobs:
       run: |
         for i in 1 2 3; do
           echo "Build attempt $i..."
-          buildozer android debug && break
+          buildozer android debug --verbose && break
           echo "Build failed (attempt $i). Retrying in 20s..."
           sleep 20
         done

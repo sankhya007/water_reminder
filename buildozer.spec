@@ -19,7 +19,7 @@ fullscreen = 1
 android.api = 34
 android.minapi = 21
 
-# ❌ REMOVED android.build_tools_version
+# ❌ android.build_tools_version REMOVED
 
 android.sdk_path = /home/runner/android-sdk
 android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653
